@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="|รายละเอียด: ${project.name}|">รายละเอียดโครงการ</title>
+    <style>
+        body{font-family:system-ui,Arial,sans-serif;margin:24px}
+        .meta{color:#666}
+        .progress{height:10px;background:#eee;border-radius:999px;overflow:hidden;margin:8px 0 4px}
+        .bar{height:100%;background:#4caf50}
+        table{width:100%;border-collapse:collapse;margin-top:12px}
+        th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+        .btn{padding:6px 10px;border:1px solid #ccc;border-radius:8px;background:#fafafa;cursor:pointer}
+        .box{border:1px solid #ddd;border-radius:12px;padding:16px;margin-top:12px}
+        .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+        .ok{background:#e8fff0;border:1px solid #b7e4c7;padding:8px;border-radius:8px;margin:8px 0}
+        .err{background:#fff0f0;border:1px solid #ffc9c9;padding:8px;border-radius:8px;margin:8px 0}
+    </style>
+</head>
+<body>
+<a class="btn" th:href="@{/home}">← กลับไปหน้ารวม</a>
+
+<h1 th:text="${project.name}">ชื่อโครงการ</h1>
+<p class="meta">
+    <span th:text="|รหัส: ${project.projectCode}|">รหัส</span> •
+    <span th:text="|เป้าหมาย: ${#numbers.formatDecimal(project.goalAmount,0,'COMMA',2,'POINT')}|">goal</span> •
+    <span th:text="|ระดมได้: ${#numbers.formatDecimal(project.currentBalance,0,'COMMA',2,'POINT')}|">raised</span> •
+    <span th:text="|กำหนดส่งท้าย: ${#temporals.format(project.deadline,'yyyy-MM-dd HH:mm')}|">deadline</span>
+</p>
+
+<!-- Progress -->
+<div class="progress">
+    <div class="bar"
+         th:with="pct=${project.goalAmount>0 ? (project.currentBalance*100.0/project.goalAmount):0}"
+         th:style="|width:${#numbers.formatDecimal(pct,0,0)}%|"></div>
+</div>
+<div class="meta"
+     th:with="pct=${project.goalAmount>0 ? (project.currentBalance*100.0/project.goalAmount):0}"
+     th:text="|ความคืบหน้า: ${#numbers.formatDecimal(pct,0,0)}%|">ความคืบหน้า</div>
+
+<!-- Flash message -->
+<div th:if="${msg != null}" class="ok" th:text="${msg}">ดำเนินการสำเร็จ</div>
+<div th:if="${error != null}" class="err" th:text="${error}">เกิดข้อผิดพลาด</div>
+
+<!-- Reward tiers -->
+<section class="box">
+    <h2>ระดับรางวัล (Reward Tiers)</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ชื่อรางวัล</th>
+            <th>ยอดขั้นต่ำ</th>
+            <th>โควตา</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="t : ${rewardTiers}">
+            <td th:text="${t.title}">เสื้อยืด</td>
+            <td th:text="${#numbers.formatDecimal(t.minAmount,0,'COMMA',2,'POINT')}">500.00</td>
+            <td th:text="${t.quota == null ? 'ไม่จำกัด' : t.quota}">ไม่จำกัด</td>
+            <!-- ปุ่มเลือก = ตั้ง tierId ใน URL เพื่อให้ select ด้านล่าง preselect -->
+        </tr>
+        <tr th:if="${#lists.isEmpty(rewardTiers)}"><td colspan="4">ยังไม่มีรางวัล</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Pledge form -->
+<section class="box">
+    <h2>สนับสนุนโครงการนี้</h2>
+    <!-- ฟอร์ม -->
+    <form method="post"
+          th:action="@{/projects/{id}/pledge(id=${project.id})}"
+          style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end">
+
+        <div>
+            <label>จำนวนเงิน (บาท)<br>
+                <input type="number" name="amount" min="1" step="1" required value="1">
+            </label>
+        </div>
+
+        <div>
+            <label>เลือกระดับรางวัล<br>
+                <select name="rewardTierId" required>
+                    <option value="" disabled
+                            th:selected="${param.tierId == null}">-- กรุณาเลือกรางวัล --</option>
+                    <option th:each="t : ${rewardTiers}"
+                            th:value="${t.id}"
+                            th:selected="${param.tierId != null and t.id == #numbers.createInteger(param.tierId)}"
+                            th:text="|${t.title} (ขั้นต่ำ ${#numbers.formatDecimal(t.minAmount,0,'COMMA',2,'POINT')})|">
+                    </option>
+                </select>
+            </label>
+        </div>
+
+        <div style="grid-column:1 / -1; color:#555; font-size:14px">
+            ผู้สนับสนุน: <b th:text="${session.LOGIN_USER != null ? session.LOGIN_USER : 'guest'}">guest</b>
+        </div>
+
+        <div style="grid-column:1 / -1">
+            <button type="submit" class="btn">ยืนยันการสนับสนุน</button>
+        </div>
+    </form>
+
+</section>
+</body>
+</html>

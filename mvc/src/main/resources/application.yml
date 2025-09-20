@@ -1,0 +1,24 @@
+server:
+  shutdown: graceful
+
+spring:
+  application:
+    name: test-mvc
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/mvc}
+    username: ${DATABASE_USER:test}
+    password: ${DATABASE_PASSWORD:1234}
+    hikari:
+      maximum-pool-size: ${POOL_SIZE:10}
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${IS_FLYWAY_BASELINE_ON_MIGRATE:true}
+    validate-on-migrate: ${IS_FLYWAY_VALIDATE_ON_MIGRATE:true}
+    locations: classpath:db/migration
+  springdoc:
+    swagger-ui:
+      path: /swagger-ui.html
+    api-docs:
+      path: /v3/api-docs
+      enabled: true

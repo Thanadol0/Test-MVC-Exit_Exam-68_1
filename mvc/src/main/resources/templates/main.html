@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="th" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>โครงการทั้งหมด</title>
+    <style>
+        body{font-family:system-ui,Arial,sans-serif;margin:24px}
+        .toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+        .card{border:1px solid #ddd;border-radius:12px;padding:16px;margin-bottom:12px}
+        .meta{font-size:12px;color:#666}
+        .row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+        .progress{height:8px;background:#eee;border-radius:999px;overflow:hidden;margin-top:8px}
+        .bar{height:100%;background:#4caf50}
+        .btn{padding:6px 10px;border:1px solid #ccc;border-radius:8px;background:#fafafa;cursor:pointer}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        @media(max-width:720px){.grid{grid-template-columns:1fr}}
+        .userbar{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+    </style>
+</head>
+<body>
+
+<!-- ถ้าไม่ล็อกอิน ให้ redirect ไป /login ทันที -->
+<div th:if="${session.LOGIN_USER == null}">
+    <script th:inline="javascript">
+        /*<![CDATA[*/ window.location.href = /*[[@{/login}]]*/ '/login'; /*]]>*/
+    </script>
+    <noscript><meta http-equiv="refresh" th:content="|0;url=@{/login}|"/></noscript>
+</div>
+
+<!-- แถบสถานะผู้ใช้ -->
+<div class="userbar" th:with="user=${session.LOGIN_USER}">
+    <span th:if="${user != null}" th:text="|ผู้ใช้: ${user}|">ผู้ใช้</span>
+
+    <!-- ปุ่มไปสรุป -->
+    <a th:if="${user != null}" class="btn" th:href="@{/summary}">สรุปสถิติการสนับสนุน</a>
+
+    <!-- ปุ่มออกจากระบบ -->
+    <form th:if="${user != null}" method="post" th:action="@{/logout}" style="display:inline">
+        <button type="submit" class="btn">Logout</button>
+    </form>
+</div>
+
+<h1>รายการโครงการ</h1>
+
+<!-- Toolbar: search + filter + sort (no action/href) -->
+<form class="toolbar" method="get">
+    <input type="text" name="q" placeholder="ค้นหาโครงการ..." th:value="${q}">
+    <select name="categoryId" th:disabled="${#lists.isEmpty(categories)}">
+        <option value="">-- หมวดหมู่ทั้งหมด --</option>
+        <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"
+                th:selected="${c.id == categoryId}"></option>
+    </select>
+    <select name="sort">
+        <option value="">-- เรียงลำดับ --</option>
+        <option value="newest" th:selected="${sort=='newest'}">ใหม่สุด</option>
+        <option value="deadline" th:selected="${sort=='deadline'}">ใกล้หมดเวลา</option>
+        <option value="mostFunded" th:selected="${sort=='mostFunded'}">ระดมได้มากสุด</option>
+    </select>
+    <button type="submit" class="btn">ค้นหา/จัดเรียง</button>
+</form>
+
+<!-- Summary line -->
+<p class="meta" th:if="${projects != null}" th:text="|พบทั้งหมด ${projects.size()} โครงการ|">พบทั้งหมด 0 โครงการ</p>
+
+<!-- List -->
+<div th:if="${projects != null}">
+    <article class="card" th:each="p : ${projects}">
+        <div class="row">
+            <div>
+                <h3 th:text="${p.name}">ชื่อโครงการ</h3>
+                <div class="meta">
+                    <span th:text="|รหัส: ${p.projectCode}|">รหัส</span> •
+                    <span th:text="|เป้าหมาย: ${#numbers.formatDecimal(p.goalAmount, 0, 'COMMA', 2, 'POINT')}|">เป้าหมาย</span> •
+                    <span th:text="|ระดมได้: ${#numbers.formatDecimal(p.currentBalance, 0, 'COMMA', 2, 'POINT')}|">ระดมได้</span> •
+                    <span th:text="|กำหนดส่งท้าย: ${#temporals.format(p.deadline, 'yyyy-MM-dd HH:mm')}|">deadline</span>
+                </div>
+            </div>
+            <div>
+                <a class="btn" th:href="@{/home/project/{id}(id=${p.id})}">ดูรายละเอียด</a>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress">
+            <div class="bar"
+                 th:with="pct=${p.goalAmount>0 ? (p.currentBalance * 100.0 / p.goalAmount) : 0}"
+                 th:style="|width:${#numbers.formatDecimal(pct,0,0)}%|"></div>
+        </div>
+        <div class="meta"
+             th:with="pct=${p.goalAmount>0 ? (p.currentBalance * 100.0 / p.goalAmount) : 0}"
+             th:text="|ความคืบหน้า: ${#numbers.formatDecimal(pct, 0, 0)}%|">ความคืบหน้า</div>
+    </article>
+</div>
+
+<!-- Pagination placeholder (ถ้ามี) -->
+<nav class="row" th:if="${page != null}">
+    <button class="btn" disabled th:disabled="${page.first}">ก่อนหน้า</button>
+    <span class="meta" th:text="|หน้า ${page.number+1} / ${page.totalPages}|">หน้า 1/1</span>
+    <button class="btn" disabled th:disabled="${page.last}">ถัดไป</button>
+</nav>
+
+</body>
+</html>
